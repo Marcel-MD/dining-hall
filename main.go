@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/Marcel-MD/dining-hall/domain"
+	"github.com/Marcel-MD/dining-hall/handlers"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
@@ -19,13 +22,12 @@ func main() {
 		log.Fatal().Err(err).Msg("Error loading .env file")
 	}
 
+	menu := domain.GetMenu()
+	fmt.Println(menu)
+
 	r := gin.Default()
 
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "Hello World",
-		})
-	})
+	r.POST("/distribution", handlers.Distribution)
 
 	r.Run()
 }
