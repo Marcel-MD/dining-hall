@@ -13,6 +13,14 @@ type Menu struct {
 	Foods      []Food
 }
 
+type Food struct {
+	Id               int    `json:"id"`
+	Name             string `json:"name"`
+	PreparationTime  int    `json:"preparation_time"`
+	Complexity       int    `json:"complexity"`
+	CookingApparatus string `json:"cooking_apparatus"`
+}
+
 func GetMenu() Menu {
 	file, err := os.Open("config/menu.json")
 	if err != nil {

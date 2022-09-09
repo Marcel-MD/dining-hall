@@ -4,12 +4,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Marcel-MD/dining-hall/dto"
 	"github.com/rs/zerolog/log"
-)
-
-const (
-	timeUnit = 250
 )
 
 const (
@@ -27,19 +22,19 @@ type Table struct {
 	Id           int
 	Menu         Menu
 	State        string
-	CurrentOrder dto.Order
-	SendChan     chan<- dto.Order
-	ReceiveChan  <-chan dto.Order
+	CurrentOrder Order
+	SendChan     chan<- Order
+	ReceiveChan  chan Order
 	RatingChan   chan<- int
 }
 
-func NewTable(id int, menu Menu, orderChan chan<- dto.Order, ratingChan chan<- int) Table {
+func NewTable(id int, menu Menu, orderChan chan<- Order, ratingChan chan<- int) Table {
 	return Table{
 		Id:          id,
 		Menu:        menu,
 		State:       free,
 		SendChan:    orderChan,
-		ReceiveChan: make(<-chan dto.Order),
+		ReceiveChan: make(chan Order),
 		RatingChan:  ratingChan,
 	}
 }
@@ -81,7 +76,7 @@ func (t *Table) SendOrder() {
 
 	foodCount := rand.Intn(maxFoodCount)
 
-	order := dto.Order{
+	order := Order{
 		OrderId:  rand.Intn(1000) + 1,
 		TableId:  t.Id,
 		Items:    make([]int, foodCount),
