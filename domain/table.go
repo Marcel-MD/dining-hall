@@ -2,9 +2,14 @@ package domain
 
 import (
 	"math/rand"
+	"time"
 
 	"github.com/Marcel-MD/dining-hall/dto"
 	"github.com/rs/zerolog/log"
+)
+
+const (
+	timeUnit = 250
 )
 
 const (
@@ -39,6 +44,14 @@ func NewTable(id int, menu Menu, orderChan chan<- dto.Order, ratingChan chan<- i
 	}
 }
 
+func (t *Table) Run() {
+	for {
+		t.WaitFree()
+		t.SendOrder()
+		t.ReceiveOrder()
+	}
+}
+
 func (t *Table) NextState() {
 	if t.State == free {
 		t.State = ready
@@ -47,6 +60,18 @@ func (t *Table) NextState() {
 	} else if t.State == waiting {
 		t.State = free
 	}
+}
+
+func (t *Table) WaitFree() {
+	if t.State != free {
+		return
+	}
+
+	freeTime := time.Duration(timeUnit * (rand.Intn(5) + 1))
+	time.Sleep(freeTime * time.Millisecond)
+	t.NextState()
+
+	log.Info().Int("table_id", t.Id).Msg("Has been occupied")
 }
 
 func (t *Table) SendOrder() {
@@ -82,6 +107,9 @@ func (t *Table) SendOrder() {
 }
 
 func (t *Table) ReceiveOrder() {
+	if t.State != waiting {
+		return
+	}
 
 	for order := range t.ReceiveChan {
 		if order.TableId != t.Id || order.OrderId != t.CurrentOrder.OrderId {
@@ -89,6 +117,11 @@ func (t *Table) ReceiveOrder() {
 			continue
 		}
 
-		// TODO: calculate rating
+		rating := order.CalculateRating()
+		t.RatingChan <- rating
+		t.NextState()
+
+		log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Int("rating", rating).Msg("Received order")
+		return
 	}
 }
