@@ -20,7 +20,7 @@ type Order struct {
 
 func (o Order) CalculateRating() int {
 	orderTime := float64(time.Now().UnixMilli() - o.PickUpTime)
-	maxWaitTime := o.MaxWait * float64(timeUnit) * float64(time.Millisecond)
+	maxWaitTime := o.MaxWait * float64(timeUnit)
 
 	if orderTime < maxWaitTime {
 		return 5

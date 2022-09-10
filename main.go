@@ -18,8 +18,8 @@ func main() {
 	menu := domain.GetMenu()
 	newOrderChan := make(chan domain.Order)
 	ratingChan := make(chan int)
-	tablesChans := make([]chan domain.Order, nrOfTables)
-	waitersChans := make([]chan domain.Distribution, nrOfWaiters)
+	tablesChans := make([]chan domain.Order, 0)
+	waitersChans := make([]chan domain.Distribution, 0)
 
 	for i := 0; i < nrOfTables; i++ {
 		table := domain.NewTable(i, menu, newOrderChan, ratingChan)

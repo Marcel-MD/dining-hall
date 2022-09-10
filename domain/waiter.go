@@ -23,8 +23,8 @@ type Waiter struct {
 	TablesChans      []chan Order
 }
 
-func NewWaiter(id int, orderChan <-chan Order, tablesChans []chan Order) Waiter {
-	return Waiter{
+func NewWaiter(id int, orderChan <-chan Order, tablesChans []chan Order) *Waiter {
+	return &Waiter{
 		Id:               id,
 		DistributionChan: make(chan Distribution),
 		OrderChan:        orderChan,
@@ -36,8 +36,8 @@ func (w *Waiter) Run() {
 	for {
 		select {
 		case order := <-w.OrderChan:
-			pickupTime := time.Duration(timeUnit * (rand.Intn(maxPickupTime) + 1))
-			time.Sleep(pickupTime * time.Millisecond)
+			pickupTime := time.Duration(timeUnit*(rand.Intn(maxPickupTime)+1)) * time.Millisecond
+			time.Sleep(pickupTime)
 
 			order.PickUpTime = time.Now().UnixMilli()
 			order.WaiterId = w.Id
@@ -57,7 +57,7 @@ func (w *Waiter) Run() {
 
 		case distribution := <-w.DistributionChan:
 			order := distribution.Order
-			log.Info().Int("waiter_id", w.Id).Int("order_id", order.OrderId).Msg("Waiter received distribution from chef")
+			log.Info().Int("waiter_id", w.Id).Int("order_id", order.OrderId).Int("cooking_time", distribution.CookingTime).Float64("max_wait", distribution.MaxWait).Msgf("Waiter received distribution")
 			w.TablesChans[order.TableId] <- order
 		}
 	}

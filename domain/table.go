@@ -30,8 +30,8 @@ type Table struct {
 	RatingChan   chan<- int
 }
 
-func NewTable(id int, menu Menu, orderChan chan<- Order, ratingChan chan<- int) Table {
-	return Table{
+func NewTable(id int, menu Menu, orderChan chan<- Order, ratingChan chan<- int) *Table {
+	return &Table{
 		Id:          id,
 		Menu:        menu,
 		State:       free,
@@ -43,13 +43,13 @@ func NewTable(id int, menu Menu, orderChan chan<- Order, ratingChan chan<- int) 
 
 func (t *Table) Run() {
 	for {
-		t.WaitFree()
-		t.SendOrder()
-		t.ReceiveOrder()
+		t.waitFree()
+		t.sendOrder()
+		t.receiveOrder()
 	}
 }
 
-func (t *Table) NextState() {
+func (t *Table) nextState() {
 	if t.State == free {
 		t.State = ready
 	} else if t.State == ready {
@@ -59,24 +59,24 @@ func (t *Table) NextState() {
 	}
 }
 
-func (t *Table) WaitFree() {
+func (t *Table) waitFree() {
 	if t.State != free {
 		return
 	}
 
-	freeTime := time.Duration(timeUnit * (rand.Intn(maxFreeTime) + 1))
-	time.Sleep(freeTime * time.Millisecond)
-	t.NextState()
+	freeTime := time.Duration(timeUnit*(rand.Intn(maxFreeTime)+1)) * time.Millisecond
+	time.Sleep(freeTime)
+	t.nextState()
 
 	log.Info().Int("table_id", t.Id).Msg("Table has been occupied")
 }
 
-func (t *Table) SendOrder() {
+func (t *Table) sendOrder() {
 	if t.State != ready {
 		return
 	}
 
-	foodCount := rand.Intn(maxFoodCount)
+	foodCount := rand.Intn(maxFoodCount) + 1
 
 	order := Order{
 		OrderId:  rand.Intn(maxOrderId),
@@ -98,12 +98,12 @@ func (t *Table) SendOrder() {
 
 	t.CurrentOrder = order
 	t.SendChan <- order
-	t.NextState()
+	t.nextState()
 
 	log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Table placed new order")
 }
 
-func (t *Table) ReceiveOrder() {
+func (t *Table) receiveOrder() {
 	if t.State != waiting {
 		return
 	}
@@ -116,7 +116,7 @@ func (t *Table) ReceiveOrder() {
 
 		rating := order.CalculateRating()
 		t.RatingChan <- rating
-		t.NextState()
+		t.nextState()
 
 		log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Int("rating", rating).Msg("Table received order")
 		return
