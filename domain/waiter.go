@@ -3,6 +3,7 @@ package domain
 import (
 	"bytes"
 	"encoding/json"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -10,7 +11,8 @@ import (
 )
 
 const (
-	kitchenPath = "http://localhost:8081/order"
+	kitchenPath   = "http://localhost:8081/order"
+	maxPickupTime = 5
 )
 
 type Waiter struct {
@@ -21,8 +23,8 @@ type Waiter struct {
 	TablesChans      []chan Order
 }
 
-func NewWaiter(id int, orderChan <-chan Order, tablesChans []chan Order) Waiter {
-	return Waiter{
+func NewWaiter(id int, orderChan <-chan Order, tablesChans []chan Order) *Waiter {
+	return &Waiter{
 		Id:               id,
 		DistributionChan: make(chan Distribution),
 		OrderChan:        orderChan,
@@ -34,7 +36,10 @@ func (w *Waiter) Run() {
 	for {
 		select {
 		case order := <-w.OrderChan:
-			order.PickUpTime = time.Now()
+			pickupTime := time.Duration(timeUnit*(rand.Intn(maxPickupTime)+1)) * time.Millisecond
+			time.Sleep(pickupTime)
+
+			order.PickUpTime = time.Now().UnixMilli()
 			order.WaiterId = w.Id
 
 			jsonBody, err := json.Marshal(order)
@@ -43,16 +48,16 @@ func (w *Waiter) Run() {
 			}
 			contentType := "application/json"
 
-			log.Info().Int("waiter_id", w.Id).Int("order_id", order.OrderId).Msg("Received order from table")
-
 			_, err = http.Post(kitchenPath, contentType, bytes.NewReader(jsonBody))
 			if err != nil {
 				log.Fatal().Err(err).Msg("Error sending order to kitchen")
 			}
 
+			log.Info().Int("waiter_id", w.Id).Int("order_id", order.OrderId).Msg("Waiter sent order to kitchen")
+
 		case distribution := <-w.DistributionChan:
 			order := distribution.Order
-			log.Info().Int("waiter_id", w.Id).Int("order_id", order.OrderId).Msg("Received distribution from chef")
+			log.Info().Int("waiter_id", w.Id).Int("order_id", order.OrderId).Int("cooking_time", distribution.CookingTime).Float64("max_wait", distribution.MaxWait).Msgf("Waiter received distribution")
 			w.TablesChans[order.TableId] <- order
 		}
 	}

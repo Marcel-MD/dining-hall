@@ -14,8 +14,10 @@ const (
 )
 
 const (
-	maxFoodCount     = 5
-	orderProbability = 0.25
+	maxFoodCount       = 5
+	maxFreeTime        = 10
+	maxWaitCoefficient = 1.3
+	maxOrderId         = 1000
 )
 
 type Table struct {
@@ -28,8 +30,8 @@ type Table struct {
 	RatingChan   chan<- int
 }
 
-func NewTable(id int, menu Menu, orderChan chan<- Order, ratingChan chan<- int) Table {
-	return Table{
+func NewTable(id int, menu Menu, orderChan chan<- Order, ratingChan chan<- int) *Table {
+	return &Table{
 		Id:          id,
 		Menu:        menu,
 		State:       free,
@@ -41,13 +43,13 @@ func NewTable(id int, menu Menu, orderChan chan<- Order, ratingChan chan<- int) 
 
 func (t *Table) Run() {
 	for {
-		t.WaitFree()
-		t.SendOrder()
-		t.ReceiveOrder()
+		t.waitFree()
+		t.sendOrder()
+		t.receiveOrder()
 	}
 }
 
-func (t *Table) NextState() {
+func (t *Table) nextState() {
 	if t.State == free {
 		t.State = ready
 	} else if t.State == ready {
@@ -57,27 +59,27 @@ func (t *Table) NextState() {
 	}
 }
 
-func (t *Table) WaitFree() {
+func (t *Table) waitFree() {
 	if t.State != free {
 		return
 	}
 
-	freeTime := time.Duration(timeUnit * (rand.Intn(5) + 1))
-	time.Sleep(freeTime * time.Millisecond)
-	t.NextState()
+	freeTime := time.Duration(timeUnit*(rand.Intn(maxFreeTime)+1)) * time.Millisecond
+	time.Sleep(freeTime)
+	t.nextState()
 
-	log.Info().Int("table_id", t.Id).Msg("Has been occupied")
+	log.Info().Int("table_id", t.Id).Msg("Table has been occupied")
 }
 
-func (t *Table) SendOrder() {
+func (t *Table) sendOrder() {
 	if t.State != ready {
 		return
 	}
 
-	foodCount := rand.Intn(maxFoodCount)
+	foodCount := rand.Intn(maxFoodCount) + 1
 
 	order := Order{
-		OrderId:  rand.Intn(1000) + 1,
+		OrderId:  rand.Intn(maxOrderId),
 		TableId:  t.Id,
 		Items:    make([]int, foodCount),
 		Priority: maxFoodCount - foodCount,
@@ -92,31 +94,31 @@ func (t *Table) SendOrder() {
 		}
 	}
 
-	order.MaxWait = float64(maxTime) * 1.3
+	order.MaxWait = float64(maxTime) * maxWaitCoefficient
 
 	t.CurrentOrder = order
-	t.NextState()
 	t.SendChan <- order
+	t.nextState()
 
-	log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Sent order")
+	log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Table placed new order")
 }
 
-func (t *Table) ReceiveOrder() {
+func (t *Table) receiveOrder() {
 	if t.State != waiting {
 		return
 	}
 
 	for order := range t.ReceiveChan {
 		if order.TableId != t.Id || order.OrderId != t.CurrentOrder.OrderId {
-			log.Err(nil).Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Received wrong order")
+			log.Err(nil).Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Table received wrong order")
 			continue
 		}
 
 		rating := order.CalculateRating()
 		t.RatingChan <- rating
-		t.NextState()
+		t.nextState()
 
-		log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Int("rating", rating).Msg("Received order")
+		log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Int("rating", rating).Msg("Table received order")
 		return
 	}
 }
