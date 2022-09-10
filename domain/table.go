@@ -14,8 +14,10 @@ const (
 )
 
 const (
-	maxFoodCount     = 5
-	orderProbability = 0.25
+	maxFoodCount       = 5
+	maxFreeTime        = 10
+	maxWaitCoefficient = 1.3
+	maxOrderId         = 1000
 )
 
 type Table struct {
@@ -62,11 +64,11 @@ func (t *Table) WaitFree() {
 		return
 	}
 
-	freeTime := time.Duration(timeUnit * (rand.Intn(5) + 1))
+	freeTime := time.Duration(timeUnit * (rand.Intn(maxFreeTime) + 1))
 	time.Sleep(freeTime * time.Millisecond)
 	t.NextState()
 
-	log.Info().Int("table_id", t.Id).Msg("Has been occupied")
+	log.Info().Int("table_id", t.Id).Msg("Table has been occupied")
 }
 
 func (t *Table) SendOrder() {
@@ -77,7 +79,7 @@ func (t *Table) SendOrder() {
 	foodCount := rand.Intn(maxFoodCount)
 
 	order := Order{
-		OrderId:  rand.Intn(1000) + 1,
+		OrderId:  rand.Intn(maxOrderId),
 		TableId:  t.Id,
 		Items:    make([]int, foodCount),
 		Priority: maxFoodCount - foodCount,
@@ -92,13 +94,13 @@ func (t *Table) SendOrder() {
 		}
 	}
 
-	order.MaxWait = float64(maxTime) * 1.3
+	order.MaxWait = float64(maxTime) * maxWaitCoefficient
 
 	t.CurrentOrder = order
-	t.NextState()
 	t.SendChan <- order
+	t.NextState()
 
-	log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Sent order")
+	log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Table placed new order")
 }
 
 func (t *Table) ReceiveOrder() {
@@ -108,7 +110,7 @@ func (t *Table) ReceiveOrder() {
 
 	for order := range t.ReceiveChan {
 		if order.TableId != t.Id || order.OrderId != t.CurrentOrder.OrderId {
-			log.Err(nil).Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Received wrong order")
+			log.Err(nil).Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Table received wrong order")
 			continue
 		}
 
@@ -116,7 +118,7 @@ func (t *Table) ReceiveOrder() {
 		t.RatingChan <- rating
 		t.NextState()
 
-		log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Int("rating", rating).Msg("Received order")
+		log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Int("rating", rating).Msg("Table received order")
 		return
 	}
 }

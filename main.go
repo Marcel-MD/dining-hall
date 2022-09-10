@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/Marcel-MD/dining-hall/domain"
 	"github.com/gin-gonic/gin"
@@ -10,19 +11,15 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const (
-	nrOfTables  = 4
-	nrOfWaiters = 2
-)
-
 func main() {
-	config()
+	timeUnit, nrOfTables, nrOfWaiters := config()
 
+	domain.SetTimeUnit(timeUnit)
 	menu := domain.GetMenu()
 	newOrderChan := make(chan domain.Order)
 	ratingChan := make(chan int)
-	tablesChans := make([]chan domain.Order, 0)
-	waitersChans := make([]chan domain.Distribution, 0)
+	tablesChans := make([]chan domain.Order, nrOfTables)
+	waitersChans := make([]chan domain.Distribution, nrOfWaiters)
 
 	for i := 0; i < nrOfTables; i++ {
 		table := domain.NewTable(i, menu, newOrderChan, ratingChan)
@@ -55,16 +52,6 @@ func main() {
 	r.Run()
 }
 
-func config() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	log.Logger = log.With().Caller().Logger()
-
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error loading .env file")
-	}
-}
-
 func rating(ratingChan <-chan int) {
 	nrOfRatings := 0
 	totalRating := 0
@@ -75,4 +62,31 @@ func rating(ratingChan <-chan int) {
 		totalRating += rating
 		log.Info().Int("rating", rating).Float64("avg_rating", float64(totalRating)/float64(nrOfRatings)).Msg("Received rating")
 	}
+}
+
+func config() (timeUnit, nrOfTables, nrOfWaiters int) {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	log.Logger = log.With().Caller().Logger()
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error loading .env file")
+	}
+
+	timeUnit, err = strconv.Atoi(os.Getenv("TIME_UNIT"))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error reading TIME_UNIT")
+	}
+
+	nrOfTables, err = strconv.Atoi(os.Getenv("TABLES"))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error reading TABLES")
+	}
+
+	nrOfWaiters, err = strconv.Atoi(os.Getenv("WAITERS"))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error reading WAITERS")
+	}
+
+	return
 }
