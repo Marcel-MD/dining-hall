@@ -1,33 +1,33 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"os"
-	"strconv"
 
 	"github.com/Marcel-MD/dining-hall/domain"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	timeUnit, nrOfTables, nrOfWaiters := config()
+	cfg := config()
+	domain.SetConfig(cfg)
 
-	domain.SetTimeUnit(timeUnit)
 	menu := domain.GetMenu()
 	newOrderChan := make(chan domain.Order)
 	ratingChan := make(chan int)
 	tablesChans := make([]chan domain.Order, 0)
 	waitersChans := make([]chan domain.Distribution, 0)
 
-	for i := 0; i < nrOfTables; i++ {
+	for i := 0; i < cfg.NrOfTables; i++ {
 		table := domain.NewTable(i, menu, newOrderChan, ratingChan)
 		tablesChans = append(tablesChans, table.ReceiveChan)
 		go table.Run()
 	}
 
-	for i := 0; i < nrOfWaiters; i++ {
+	for i := 0; i < cfg.NrOfWaiters; i++ {
 		waiter := domain.NewWaiter(i, newOrderChan, tablesChans)
 		waitersChans = append(waitersChans, waiter.DistributionChan)
 		go waiter.Run()
@@ -64,29 +64,19 @@ func rating(ratingChan <-chan int) {
 	}
 }
 
-func config() (timeUnit, nrOfTables, nrOfWaiters int) {
+func config() domain.Config {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	log.Logger = log.With().Caller().Logger()
 
-	err := godotenv.Load(".env")
+	file, err := os.Open("config/cfg.json")
 	if err != nil {
-		log.Fatal().Err(err).Msg("Error loading .env file")
+		log.Fatal().Err(err).Msg("Error opening menu.json")
 	}
+	defer file.Close()
 
-	timeUnit, err = strconv.Atoi(os.Getenv("TIME_UNIT"))
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error reading TIME_UNIT")
-	}
+	byteValue, _ := ioutil.ReadAll(file)
+	var cfg domain.Config
+	json.Unmarshal(byteValue, &cfg)
 
-	nrOfTables, err = strconv.Atoi(os.Getenv("TABLES"))
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error reading TABLES")
-	}
-
-	nrOfWaiters, err = strconv.Atoi(os.Getenv("WAITERS"))
-	if err != nil {
-		log.Fatal().Err(err).Msg("Error reading WAITERS")
-	}
-
-	return
+	return cfg
 }

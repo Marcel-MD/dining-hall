@@ -10,11 +10,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const (
-	kitchenPath   = "http://localhost:8081/order"
-	maxPickupTime = 5
-)
-
 type Waiter struct {
 	Id               int
 	CurrentOrder     Order
@@ -36,10 +31,10 @@ func (w *Waiter) Run() {
 	for {
 		select {
 		case order := <-w.OrderChan:
-			pickupTime := time.Duration(timeUnit*(rand.Intn(maxPickupTime)+1)) * time.Millisecond
+			pickupTime := time.Duration(cfg.TimeUnit*(rand.Intn(cfg.MaxPickupTime)+1)) * time.Millisecond
 			time.Sleep(pickupTime)
 
-			order.PickUpTime = time.Now().UnixMilli()
+			order.PickUpTime = time.Now().Unix()
 			order.WaiterId = w.Id
 
 			jsonBody, err := json.Marshal(order)
@@ -48,16 +43,16 @@ func (w *Waiter) Run() {
 			}
 			contentType := "application/json"
 
-			_, err = http.Post(kitchenPath, contentType, bytes.NewReader(jsonBody))
+			_, err = http.Post(cfg.KitchenUrl+"/order", contentType, bytes.NewReader(jsonBody))
 			if err != nil {
 				log.Fatal().Err(err).Msg("Error sending order to kitchen")
 			}
 
-			log.Info().Int("waiter_id", w.Id).Int("order_id", order.OrderId).Msg("Waiter sent order to kitchen")
+			log.Info().Int("waiter_id", w.Id).Int64("order_id", order.OrderId).Msg("Waiter sent order to kitchen")
 
 		case distribution := <-w.DistributionChan:
 			order := distribution.Order
-			log.Info().Int("waiter_id", w.Id).Int("order_id", order.OrderId).Int("cooking_time", distribution.CookingTime).Float64("max_wait", distribution.MaxWait).Msgf("Waiter received distribution")
+			log.Info().Int("waiter_id", w.Id).Int64("order_id", order.OrderId).Int("cooking_time", distribution.CookingTime).Float64("max_wait", distribution.MaxWait).Msgf("Waiter received distribution")
 			w.TablesChans[order.TableId] <- order
 		}
 	}

@@ -1,15 +1,13 @@
 package domain
 
-import "time"
+import (
+	"time"
 
-var timeUnit = 1000
-
-func SetTimeUnit(unit int) {
-	timeUnit = unit
-}
+	"github.com/rs/zerolog/log"
+)
 
 type Order struct {
-	OrderId    int     `json:"order_id"`
+	OrderId    int64   `json:"order_id"`
 	TableId    int     `json:"table_id"`
 	WaiterId   int     `json:"waiter_id"`
 	Items      []int   `json:"items"`
@@ -19,8 +17,10 @@ type Order struct {
 }
 
 func (o Order) CalculateRating() int {
-	orderTime := float64(time.Now().UnixMilli() - o.PickUpTime)
-	maxWaitTime := o.MaxWait * float64(timeUnit)
+	orderTime := float64((time.Now().Unix() - o.PickUpTime) * 1000 / int64(cfg.TimeUnit))
+	maxWaitTime := o.MaxWait
+
+	log.Info().Int64("order_id", o.OrderId).Float64("order_time", orderTime).Float64("max_wait", maxWaitTime).Msg("Calculating rating")
 
 	if orderTime < maxWaitTime {
 		return 5

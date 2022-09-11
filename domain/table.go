@@ -2,6 +2,7 @@ package domain
 
 import (
 	"math/rand"
+	"sync/atomic"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -13,12 +14,7 @@ const (
 	waiting = "waiting"
 )
 
-const (
-	maxFoodCount       = 5
-	maxFreeTime        = 10
-	maxWaitCoefficient = 1.3
-	maxOrderId         = 1000
-)
+var orderId int64
 
 type Table struct {
 	Id           int
@@ -64,7 +60,7 @@ func (t *Table) waitFree() {
 		return
 	}
 
-	freeTime := time.Duration(timeUnit*(rand.Intn(maxFreeTime)+1)) * time.Millisecond
+	freeTime := time.Duration(cfg.TimeUnit*(rand.Intn(cfg.MaxTableFreeTime)+1)) * time.Millisecond
 	time.Sleep(freeTime)
 	t.nextState()
 
@@ -76,13 +72,13 @@ func (t *Table) sendOrder() {
 		return
 	}
 
-	foodCount := rand.Intn(maxFoodCount) + 1
+	foodCount := rand.Intn(cfg.MaxOrderItemsCount) + 1
 
 	order := Order{
-		OrderId:  rand.Intn(maxOrderId),
+		OrderId:  atomic.AddInt64(&orderId, 1),
 		TableId:  t.Id,
 		Items:    make([]int, foodCount),
-		Priority: maxFoodCount - foodCount,
+		Priority: cfg.MaxOrderItemsCount - foodCount,
 	}
 
 	maxTime := 0
@@ -94,13 +90,13 @@ func (t *Table) sendOrder() {
 		}
 	}
 
-	order.MaxWait = float64(maxTime) * maxWaitCoefficient
+	order.MaxWait = float64(maxTime) * cfg.MaxWaitTimeCoefficient
 
 	t.CurrentOrder = order
 	t.SendChan <- order
 	t.nextState()
 
-	log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Table placed new order")
+	log.Info().Int("table_id", t.Id).Int64("order_id", order.OrderId).Msg("Table placed new order")
 }
 
 func (t *Table) receiveOrder() {
@@ -110,7 +106,7 @@ func (t *Table) receiveOrder() {
 
 	for order := range t.ReceiveChan {
 		if order.TableId != t.Id || order.OrderId != t.CurrentOrder.OrderId {
-			log.Err(nil).Int("table_id", t.Id).Int("order_id", order.OrderId).Msg("Table received wrong order")
+			log.Err(nil).Int("table_id", t.Id).Int64("order_id", order.OrderId).Msg("Table received wrong order")
 			continue
 		}
 
@@ -118,7 +114,7 @@ func (t *Table) receiveOrder() {
 		t.RatingChan <- rating
 		t.nextState()
 
-		log.Info().Int("table_id", t.Id).Int("order_id", order.OrderId).Int("rating", rating).Msg("Table received order")
+		log.Info().Int("table_id", t.Id).Int64("order_id", order.OrderId).Int("rating", rating).Msg("Table received order")
 		return
 	}
 }
