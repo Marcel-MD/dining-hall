@@ -1,0 +1,13 @@
+{
+  "time_unit": 250,
+  "nr_of_tables": 10,
+  "nr_of_waiters": 4,
+
+  "max_order_items_count": 5,
+  "max_table_free_time": 20,
+  "max_wait_time_coefficient": 1.3,
+  "max_order_id": 1000,
+  "max_pickup_time": 5,
+
+  "kitchen_url": "http://kitchen:8081"
+}
