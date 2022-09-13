@@ -2,11 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
+	"net/http"
 	"os"
 
 	"github.com/Marcel-MD/dining-hall/domain"
-	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -35,21 +36,22 @@ func main() {
 
 	go rating(ratingChan)
 
-	r := gin.Default()
-	r.POST("/distribution", func(c *gin.Context) {
+	r := mux.NewRouter()
+	r.HandleFunc("/distribution", func(w http.ResponseWriter, r *http.Request) {
 		var distribution domain.Distribution
-
-		if err := c.ShouldBindJSON(&distribution); err != nil {
-			log.Err(err).Msg("Error binding JSON")
-			c.JSON(400, gin.H{"error": err.Error()})
+		err := json.NewDecoder(r.Body).Decode(&distribution)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		waiterId := distribution.WaiterId
 		waitersChans[waiterId] <- distribution
-		c.JSON(200, gin.H{"message": "Order served"})
-	})
-	r.Run()
+
+		w.WriteHeader(http.StatusOK)
+	}).Methods("POST")
+
+	http.ListenAndServe(":8080", r)
 }
 
 func rating(ratingChan <-chan int) {
@@ -74,7 +76,7 @@ func config() domain.Config {
 	}
 	defer file.Close()
 
-	byteValue, _ := ioutil.ReadAll(file)
+	byteValue, _ := io.ReadAll(file)
 	var cfg domain.Config
 	json.Unmarshal(byteValue, &cfg)
 
