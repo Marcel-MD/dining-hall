@@ -64,7 +64,7 @@ func (t *Table) waitFree() {
 	time.Sleep(freeTime)
 	t.nextState()
 
-	log.Info().Int("table_id", t.Id).Msg("Table has been occupied")
+	log.Debug().Int("table_id", t.Id).Msg("Table has been occupied")
 }
 
 func (t *Table) sendOrder() {
@@ -75,11 +75,12 @@ func (t *Table) sendOrder() {
 	foodCount := rand.Intn(cfg.MaxOrderItemsCount) + 1
 
 	order := Order{
-		OrderId:  atomic.AddInt64(&orderId, 1),
-		TableId:  t.Id,
-		Items:    make([]int, foodCount),
-		Priority: cfg.MaxOrderItemsCount - foodCount,
+		OrderId: atomic.AddInt64(&orderId, 1),
+		TableId: t.Id,
+		Items:   make([]int, foodCount),
 	}
+
+	order.Priority = cfg.MaxOrderItemsCount - foodCount + int(orderId)
 
 	maxTime := 0
 	for i := 0; i < foodCount; i++ {
@@ -96,7 +97,7 @@ func (t *Table) sendOrder() {
 	t.SendChan <- order
 	t.nextState()
 
-	log.Info().Int("table_id", t.Id).Int64("order_id", order.OrderId).Msg("Table placed new order")
+	log.Debug().Int("table_id", t.Id).Int64("order_id", order.OrderId).Msg("Table placed new order")
 }
 
 func (t *Table) receiveOrder() {
@@ -114,7 +115,7 @@ func (t *Table) receiveOrder() {
 		t.RatingChan <- rating
 		t.nextState()
 
-		log.Info().Int("table_id", t.Id).Int64("order_id", order.OrderId).Int("rating", rating).Msg("Table received order")
+		log.Debug().Int("table_id", t.Id).Int64("order_id", order.OrderId).Int("rating", rating).Msg("Table received order")
 		return
 	}
 }

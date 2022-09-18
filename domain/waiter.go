@@ -48,11 +48,11 @@ func (w *Waiter) Run() {
 				log.Fatal().Err(err).Msg("Error sending order to kitchen")
 			}
 
-			log.Info().Int("waiter_id", w.Id).Int64("order_id", order.OrderId).Msg("Waiter sent order to kitchen")
+			log.Debug().Int("waiter_id", w.Id).Int64("order_id", order.OrderId).Msg("Waiter sent order to kitchen")
 
 		case distribution := <-w.DistributionChan:
 			order := distribution.Order
-			log.Info().Int("waiter_id", w.Id).Int64("order_id", order.OrderId).Int("cooking_time", distribution.CookingTime).Float64("max_wait", distribution.MaxWait).Msgf("Waiter received distribution")
+			log.Debug().Int("waiter_id", w.Id).Int64("order_id", order.OrderId).Int("cooking_time", distribution.CookingTime).Float64("max_wait", distribution.MaxWait).Msgf("Waiter received distribution")
 			w.TablesChans[order.TableId] <- order
 		}
 	}

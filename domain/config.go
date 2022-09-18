@@ -8,7 +8,6 @@ type Config struct {
 	MaxOrderItemsCount     int     `json:"max_order_items_count"`
 	MaxTableFreeTime       int     `json:"max_table_free_time"`
 	MaxWaitTimeCoefficient float64 `json:"max_wait_time_coefficient"`
-	MaxOrderId             int     `json:"max_order_id"`
 	MaxPickupTime          int     `json:"max_pickup_time"`
 
 	KitchenUrl string `json:"kitchen_url"`
@@ -22,7 +21,6 @@ var cfg Config = Config{
 	MaxOrderItemsCount:     5,
 	MaxTableFreeTime:       20,
 	MaxWaitTimeCoefficient: 1.3,
-	MaxOrderId:             1000,
 	MaxPickupTime:          5,
 
 	KitchenUrl: "http://kitchen:8081",
