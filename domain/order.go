@@ -20,7 +20,7 @@ func (o Order) CalculateRating() int {
 	orderTime := float64((time.Now().Unix() - o.PickUpTime) * 1000 / int64(cfg.TimeUnit))
 	maxWaitTime := o.MaxWait
 
-	log.Info().Int64("order_id", o.OrderId).Float64("order_time", orderTime).Float64("max_wait", maxWaitTime).Msg("Calculating rating")
+	log.Debug().Int64("order_id", o.OrderId).Float64("order_time", orderTime).Float64("max_wait", maxWaitTime).Msg("Calculating rating")
 
 	if orderTime < maxWaitTime {
 		return 5
