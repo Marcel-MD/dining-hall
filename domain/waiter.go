@@ -34,7 +34,7 @@ func (w *Waiter) Run() {
 			pickupTime := time.Duration(cfg.TimeUnit*(rand.Intn(cfg.MaxPickupTime)+1)) * time.Millisecond
 			time.Sleep(pickupTime)
 
-			order.PickUpTime = time.Now().Unix()
+			order.PickUpTime = time.Now().UnixMilli()
 			order.WaiterId = w.Id
 
 			jsonBody, err := json.Marshal(order)

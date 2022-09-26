@@ -80,7 +80,7 @@ func (t *Table) sendOrder() {
 		Items:   make([]int, foodCount),
 	}
 
-	order.Priority = cfg.MaxOrderItemsCount - foodCount + int(orderId)
+	order.Priority = (cfg.MaxOrderItemsCount - foodCount) / (cfg.MaxOrderItemsCount / 5)
 
 	maxTime := 0
 	for i := 0; i < foodCount; i++ {

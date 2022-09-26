@@ -17,7 +17,7 @@ type Order struct {
 }
 
 func (o Order) CalculateRating() int {
-	orderTime := float64((time.Now().Unix() - o.PickUpTime) * 1000 / int64(cfg.TimeUnit))
+	orderTime := float64((time.Now().UnixMilli() - o.PickUpTime) / int64(cfg.TimeUnit))
 	maxWaitTime := o.MaxWait
 
 	log.Debug().Int64("order_id", o.OrderId).Float64("order_time", orderTime).Float64("max_wait", maxWaitTime).Msg("Calculating rating")
