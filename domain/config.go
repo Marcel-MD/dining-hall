@@ -14,11 +14,11 @@ type Config struct {
 }
 
 var cfg Config = Config{
-	TimeUnit:    1000,
+	TimeUnit:    250,
 	NrOfTables:  10,
 	NrOfWaiters: 4,
 
-	MaxOrderItemsCount:     5,
+	MaxOrderItemsCount:     10,
 	MaxTableFreeTime:       20,
 	MaxWaitTimeCoefficient: 1.3,
 	MaxPickupTime:          5,
