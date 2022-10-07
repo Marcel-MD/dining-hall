@@ -74,6 +74,14 @@ func (t *Table) sendOrder() {
 
 	foodCount := rand.Intn(cfg.MaxOrderItemsCount) + 1
 
+	for i := 0; i < 3; i++ {
+		if foodCount > 5 {
+			foodCount = rand.Intn(cfg.MaxOrderItemsCount) + 1
+		} else {
+			break
+		}
+	}
+
 	order := Order{
 		OrderId: atomic.AddInt64(&orderId, 1),
 		TableId: t.Id,
