@@ -14,7 +14,7 @@ const (
 	waiting = "waiting"
 )
 
-var orderId int64
+var OrderId int64
 
 type Table struct {
 	Id           int
@@ -83,7 +83,7 @@ func (t *Table) sendOrder() {
 	}
 
 	order := Order{
-		OrderId: atomic.AddInt64(&orderId, 1),
+		OrderId: atomic.AddInt64(&OrderId, 1),
 		TableId: t.Id,
 		Items:   make([]int, foodCount),
 	}

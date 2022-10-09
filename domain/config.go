@@ -10,7 +10,13 @@ type Config struct {
 	MaxWaitTimeCoefficient float64 `json:"max_wait_time_coefficient"`
 	MaxPickupTime          int     `json:"max_pickup_time"`
 
-	KitchenUrl string `json:"kitchen_url"`
+	KitchenUrl      string `json:"kitchen_url"`
+	FoodOrderingUrl string `json:"food_ordering_url"`
+	DiningHallPort  string `json:"dining_hall_port"`
+	DiningHallUrl   string `json:"dining_hall_url"`
+
+	RestaurantName string `json:"restaurant_name"`
+	RestaurantId   int    `json:"restaurant_id"`
 }
 
 var cfg Config = Config{
@@ -23,7 +29,13 @@ var cfg Config = Config{
 	MaxWaitTimeCoefficient: 1.3,
 	MaxPickupTime:          5,
 
-	KitchenUrl: "http://kitchen:8081",
+	KitchenUrl:      "http://kitchen:8081",
+	FoodOrderingUrl: "http://food-ordering:8090",
+	DiningHallPort:  "8080",
+	DiningHallUrl:   "http://dining-hall:8080",
+
+	RestaurantName: "Mujik's Pizza",
+	RestaurantId:   1,
 }
 
 func SetConfig(c Config) {
