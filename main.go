@@ -75,6 +75,7 @@ func main() {
 
 		if distribution.WaiterId == v2Id {
 			distributionAwaitingPickup[distribution.OrderId] = distribution
+			log.Info().Int64("order_id", distribution.OrderId).Msg("Distribution ready for pickup")
 		} else {
 			waiterId := distribution.WaiterId
 			waitersChans[waiterId] <- distribution
@@ -133,11 +134,13 @@ func main() {
 
 		distribution, ok := distributionAwaitingPickup[orderId]
 		if !ok {
-			http.Error(w, "Order not found", http.StatusNotFound)
+			http.Error(w, "Distribution not ready", http.StatusNotFound)
+			log.Debug().Int64("order_id", orderId).Msg("Distribution not ready")
 			return
 		}
 
 		delete(distributionAwaitingPickup, orderId)
+		log.Info().Int64("order_id", orderId).Msg("Distribution picked up")
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(distribution)
