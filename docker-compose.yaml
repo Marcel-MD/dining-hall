@@ -1,10 +1,35 @@
 services:
+
   dining-hall:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        config: config
+        port: 8080
     ports:
       - "8080:8080"
+  
+  dining-hall-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        config: config-1
+        port: 8081
+    ports:
+      - "8081:8081"
+  
+  dining-hall-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        config: config-2
+        port: 8082
+    ports:
+      - "8082:8082"
+
 networks:
   default:
     name: restaurant

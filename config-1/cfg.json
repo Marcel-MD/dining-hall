@@ -6,10 +6,10 @@
   "max_table_free_time": 300,
   "max_wait_time_coefficient": 1.3,
   "max_pickup_time": 5,
-  "kitchen_url": "http://kitchen:8070",
+  "kitchen_url": "http://kitchen-1:8071",
   "food_ordering_url": "http://food-ordering:8090",
-  "dining_hall_port": "8080",
-  "dining_hall_url": "http://dining-hall:8080",
-  "restaurant_name": "Mujik's Pizza",
-  "restaurant_id": 1
+  "dining_hall_port": "8081",
+  "dining_hall_url": "http://dining-hall-1:8081",
+  "restaurant_name": "Sweet Pumpkin",
+  "restaurant_id": 2
 }
