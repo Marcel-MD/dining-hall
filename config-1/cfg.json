@@ -1,7 +1,7 @@
 {
   "time_unit": 250,
-  "nr_of_tables": 10,
-  "nr_of_waiters": 4,
+  "nr_of_tables": 6,
+  "nr_of_waiters": 3,
   "max_order_items_count": 10,
   "max_table_free_time": 300,
   "max_wait_time_coefficient": 1.3,
