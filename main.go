@@ -28,7 +28,7 @@ func main() {
 	tablesChans := make([]chan domain.Order, 0)
 	waitersChans := make([]chan domain.Distribution, 0)
 
-	distributionAwaitingPickup := make(map[int64]domain.Distribution)
+	distributionAwaitingPickup := make(map[int64]domain.DistributionResponse)
 
 	for i := 0; i < cfg.NrOfTables; i++ {
 		table := domain.NewTable(i, menu, newOrderChan, ratingChan)
@@ -74,7 +74,19 @@ func main() {
 		}
 
 		if distribution.WaiterId == v2Id {
-			distributionAwaitingPickup[distribution.OrderId] = distribution
+
+			distributionResponse, ok := distributionAwaitingPickup[distribution.OrderId]
+			if !ok {
+				log.Error().Int64("order_id", distribution.OrderId).Msg("Order not found")
+				http.Error(w, "Order not found", http.StatusBadRequest)
+				return
+			}
+
+			distributionResponse.CookingDetails = distribution.CookingDetails
+			distributionResponse.CookingTime = distribution.CookingTime
+			distributionResponse.IsReady = true
+
+			distributionAwaitingPickup[distribution.OrderId] = distributionResponse
 			log.Info().Int64("order_id", distribution.OrderId).Msg("Distribution ready for pickup")
 		} else {
 			waiterId := distribution.WaiterId
@@ -111,6 +123,18 @@ func main() {
 
 		log.Debug().Int64("order_id", order.OrderId).Msg("v2 Order sent to kitchen")
 
+		distributionResponse := domain.DistributionResponse{
+			OrderId:        order.OrderId,
+			IsReady:        false,
+			Priority:       order.Priority,
+			MaxWait:        order.MaxWait,
+			EstimatedWait:  order.MaxWait,
+			CreatedTime:    order.CreatedTime,
+			RegisteredTime: time.Now().UnixMilli(),
+		}
+
+		distributionAwaitingPickup[order.OrderId] = distributionResponse
+
 		orderResponse := domain.OrderResponseData{
 			OrderId:        order.OrderId,
 			RestaurantId:   cfg.RestaurantId,
@@ -134,12 +158,15 @@ func main() {
 
 		distribution, ok := distributionAwaitingPickup[orderId]
 		if !ok {
-			http.Error(w, "Distribution not ready", http.StatusNotFound)
-			log.Debug().Int64("order_id", orderId).Msg("Distribution not ready")
+			http.Error(w, "Distribution not found", http.StatusNotFound)
+			log.Warn().Int64("order_id", orderId).Msg("Distribution not found")
 			return
 		}
 
-		delete(distributionAwaitingPickup, orderId)
+		if distribution.IsReady {
+			delete(distributionAwaitingPickup, orderId)
+		}
+
 		log.Info().Int64("order_id", orderId).Msg("Distribution picked up")
 
 		w.Header().Set("Content-Type", "application/json")
