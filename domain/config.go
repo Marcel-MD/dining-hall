@@ -17,6 +17,11 @@ type Config struct {
 
 	RestaurantName string `json:"restaurant_name"`
 	RestaurantId   int    `json:"restaurant_id"`
+
+	SumProficiencies int `json:"sum_proficiencies"`
+	NrApparatuses    int `json:"nr_apparatuses"`
+
+	MaxNrOfWaitingFoods int `json:"max_waiting_foods"`
 }
 
 var cfg Config = Config{
@@ -36,6 +41,11 @@ var cfg Config = Config{
 
 	RestaurantName: "Mujik's Pizza",
 	RestaurantId:   1,
+
+	SumProficiencies: 11,
+	NrApparatuses:    3,
+
+	MaxNrOfWaitingFoods: 50,
 }
 
 func SetConfig(c Config) {

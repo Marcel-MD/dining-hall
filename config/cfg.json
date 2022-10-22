@@ -11,5 +11,8 @@
   "dining_hall_port": "8080",
   "dining_hall_url": "http://dining-hall:8080",
   "restaurant_name": "Mujik's Pizza",
-  "restaurant_id": 1
+  "restaurant_id": 1,
+  "sum_proficiencies": 11,
+  "nr_apparatuses": 3,
+  "max_waiting_foods": 20
 }

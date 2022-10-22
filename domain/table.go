@@ -60,11 +60,19 @@ func (t *Table) waitFree() {
 		return
 	}
 
-	freeTime := time.Duration(cfg.TimeUnit*(rand.Intn(cfg.MaxTableFreeTime)+1)) * time.Millisecond
-	time.Sleep(freeTime)
-	t.nextState()
+	for {
+		freeTime := time.Duration(cfg.TimeUnit*(rand.Intn(cfg.MaxTableFreeTime)+1)) * time.Millisecond
+		time.Sleep(freeTime)
 
-	log.Debug().Int("table_id", t.Id).Msg("Table has been occupied")
+		if atomic.LoadInt64(&NrOfWaitingFoods) > int64(cfg.MaxNrOfWaitingFoods) {
+			log.Warn().Int("table_id", t.Id).Int64("waiting_foods", atomic.LoadInt64(&NrOfWaitingFoods)).Msg("Table is waiting for free kitchen")
+			continue
+		}
+
+		t.nextState()
+		log.Debug().Int("table_id", t.Id).Msg("Table has been occupied")
+		return
+	}
 }
 
 func (t *Table) sendOrder() {

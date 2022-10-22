@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"math/rand"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/rs/zerolog/log"
 )
+
+var NrOfWaitingFoods int64
 
 type Waiter struct {
 	Id               int
@@ -49,6 +52,8 @@ func (w *Waiter) Run() {
 			}
 
 			log.Debug().Int("waiter_id", w.Id).Int64("order_id", order.OrderId).Msg("Waiter sent order to kitchen")
+
+			atomic.AddInt64(&NrOfWaitingFoods, int64(len(order.Items)))
 
 		case distribution := <-w.DistributionChan:
 			order := distribution.Order

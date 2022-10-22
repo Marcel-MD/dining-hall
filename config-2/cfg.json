@@ -11,5 +11,8 @@
   "dining_hall_port": "8082",
   "dining_hall_url": "http://dining-hall-2:8082",
   "restaurant_name": "Mancam ceva cu tolk",
-  "restaurant_id": 3
+  "restaurant_id": 3,
+  "sum_proficiencies": 11,
+  "nr_apparatuses": 3,
+  "max_waiting_foods": 20
 }

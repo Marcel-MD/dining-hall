@@ -73,6 +73,8 @@ func main() {
 			return
 		}
 
+		atomic.AddInt64(&domain.NrOfWaitingFoods, -int64(len(distribution.Order.Items)))
+
 		if distribution.WaiterId == v2Id {
 
 			distributionResponse, ok := distributionAwaitingPickup[distribution.OrderId]
@@ -123,12 +125,19 @@ func main() {
 
 		log.Debug().Int64("order_id", order.OrderId).Msg("v2 Order sent to kitchen")
 
+		atomic.AddInt64(&domain.NrOfWaitingFoods, int64(len(order.Items)))
+
+		wait := estimateWait(cfg, menu, order)
+		if wait > order.MaxWait {
+			wait = order.MaxWait
+		}
+
 		distributionResponse := domain.DistributionResponse{
 			OrderId:        order.OrderId,
 			IsReady:        false,
 			Priority:       order.Priority,
 			MaxWait:        order.MaxWait,
-			EstimatedWait:  order.MaxWait,
+			EstimatedWait:  wait,
 			CreatedTime:    order.CreatedTime,
 			RegisteredTime: time.Now().UnixMilli(),
 		}
@@ -138,7 +147,7 @@ func main() {
 		orderResponse := domain.OrderResponseData{
 			OrderId:        order.OrderId,
 			RestaurantId:   cfg.RestaurantId,
-			EstimatedWait:  order.MaxWait,
+			EstimatedWait:  wait,
 			CreatedTime:    order.CreatedTime,
 			RegisteredTime: time.Now().UnixMilli(),
 		}
@@ -173,18 +182,70 @@ func main() {
 		json.NewEncoder(w).Encode(distribution)
 	}).Methods("GET")
 
+	r.HandleFunc("/v2/rating", func(w http.ResponseWriter, r *http.Request) {
+		var rating domain.OrderRating
+		err := json.NewDecoder(r.Body).Decode(&rating)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		log.Info().Int("order_id", rating.OrderId).Int("rating", rating.Rating).Msg("Rating received from food ordering")
+
+		ratingChan <- rating.Rating
+
+		ratingResponse := domain.RatingResponse{
+			RestaurantId:        cfg.RestaurantId,
+			RestaurantAvgRating: avgRating,
+			PreparedOrders:      nrOfRatings,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ratingResponse)
+	}).Methods("POST")
+
 	http.ListenAndServe(":"+cfg.DiningHallPort, r)
 }
 
+func estimateWait(cfg domain.Config, menu domain.Menu, order domain.Order) float64 {
+
+	a, c := 0, 0
+
+	for item := range order.Items {
+		food := menu.Foods[item]
+
+		if food.CookingApparatus != "" {
+			c += food.PreparationTime
+		} else {
+			a += food.PreparationTime
+		}
+	}
+
+	b, d := cfg.SumProficiencies, cfg.NrApparatuses
+
+	e := int(atomic.LoadInt64(&domain.NrOfWaitingFoods))
+
+	f := len(order.Items)
+
+	wait := float64((a/b + c/d) * (e + f) / f)
+
+	log.Debug().Int64("order_id", order.OrderId).Float64("estimated_wait", wait).Float64("max_wait", order.MaxWait).Msg("Estimated wait")
+
+	return wait
+}
+
+var avgRating float64
+var nrOfRatings int
+var totalRating int
+
 func rating(ratingChan <-chan int) {
-	nrOfRatings := 0
-	totalRating := 0
 
 	for {
 		rating := <-ratingChan
 		nrOfRatings++
 		totalRating += rating
-		log.Info().Int("rating", rating).Float64("avg_rating", float64(totalRating)/float64(nrOfRatings)).Msg("Received rating")
+		avgRating = float64(totalRating) / float64(nrOfRatings)
+		log.Info().Int("rating", rating).Float64("avg_rating", avgRating).Msg("Received rating")
 	}
 }
 

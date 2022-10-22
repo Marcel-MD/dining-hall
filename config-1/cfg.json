@@ -11,5 +11,8 @@
   "dining_hall_port": "8081",
   "dining_hall_url": "http://dining-hall-1:8081",
   "restaurant_name": "Sweet Pumpkin",
-  "restaurant_id": 2
+  "restaurant_id": 2,
+  "sum_proficiencies": 11,
+  "nr_apparatuses": 3,
+  "max_waiting_foods": 20
 }
